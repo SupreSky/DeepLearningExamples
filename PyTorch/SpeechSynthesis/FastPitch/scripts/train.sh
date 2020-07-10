@@ -5,9 +5,9 @@
 #    NGPU x BS x GRAD_ACC = 256.
 
 [ ! -n "$OUTPUT_DIR" ] && OUTPUT_DIR="./output"
-[ ! -n "$NGPU" ] && NGPU=8
+[ ! -n "$NGPU" ] && NGPU=1
 [ ! -n "$BS" ] && BS=32
-[ ! -n "$GRAD_ACC" ] && GRAD_ACC=1
+[ ! -n "$GRAD_ACC" ] && GRAD_ACC=8
 [ ! -n "$EPOCHS" ] && EPOCHS=1500
 [ "$AMP" == "true" ] && AMP_FLAG="--amp"
 
@@ -17,7 +17,7 @@ GBS=$(($NGPU * $BS * $GRAD_ACC))
 echo -e "\nSetup: ${NGPU}x${BS}x${GRAD_ACC} - global batch size ${GBS}\n"
 
 mkdir -p "$OUTPUT_DIR"
-python -m torch.distributed.launch --nproc_per_node ${NGPU} train.py \
+python -m torch.distributed.launch --nnodes=2 --node_rank=0 --master_addr=${IPv4} --master_port=1234 --nproc_per_node ${NGPU} train.py \
     --cuda \
     --cudnn-enabled \
     -o "$OUTPUT_DIR/" \
@@ -27,7 +27,7 @@ python -m torch.distributed.launch --nproc_per_node ${NGPU} train.py \
     --validation-files filelists/ljs_mel_dur_pitch_text_test_filelist.txt \
     --pitch-mean-std-file LJSpeech-1.1/pitch_char_stats__ljs_audio_text_train_filelist.json \
     --epochs ${EPOCHS} \
-    --epochs-per-checkpoint 100 \
+    --epochs-per-checkpoint 50 \
     --warmup-steps 1000 \
     -lr 0.1 \
     -bs ${BS} \
